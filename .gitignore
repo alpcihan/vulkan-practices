@@ -9,3 +9,7 @@ build
 
 # MAC OS
 .DS_Store
+
+# Private 
+# TODO: replace path_config.h a config build
+path_config.h 
