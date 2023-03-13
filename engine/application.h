@@ -25,6 +25,7 @@ private:
 
     VkInstance m_instance;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
+    VkDevice m_device;
 
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
@@ -48,6 +49,7 @@ private:
         _createInstance();
         _setupDebugMessenger();
         _pickPhysicalDevice();
+        _createLogicalDevice();
     }
 
     void _createInstance() {
@@ -156,9 +158,8 @@ private:
             if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
                 indices.graphicsFamily = i;
             }
-            
-            if(indices.isComplete())
-            {
+
+            if (indices.isComplete()) {
                 break;
             }
 
@@ -168,6 +169,41 @@ private:
         return indices;
     }
 
+    void _createLogicalDevice() {
+        QueueFamilyIndices indices = _findQueueFamilies(m_physicalDevice);  // TODO: do call for physical and logical devices separately
+
+        VkDeviceQueueCreateInfo queueCreateInfo{};
+        queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+        queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+        queueCreateInfo.queueCount = 1;
+        float queuePriority = 1.0f;
+        queueCreateInfo.pQueuePriorities = &queuePriority;
+
+        VkPhysicalDeviceFeatures deviceFeatures{};
+
+        VkDeviceCreateInfo createInfo{};
+        createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+        createInfo.pQueueCreateInfos = &queueCreateInfo;
+        createInfo.queueCreateInfoCount = 1;
+        createInfo.pEnabledFeatures = &deviceFeatures;
+
+        // "Previous implementations of Vulkan made a distinction between instance and device specific validation layers,
+        // but this is no longer the case. That means that the enabledLayerCount and ppEnabledLayerNames fields of
+        // VkDeviceCreateInfo are ignored by up-to-date implementations.
+        // However, it is still a good idea to set them anyway to be compatible with older implementations"
+        createInfo.enabledExtensionCount = 0;
+        if (m_enableValidationLayers) {
+            createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
+            createInfo.ppEnabledLayerNames = m_validationLayers.data();
+        } else {
+            createInfo.enabledLayerCount = 0;
+        }
+
+        if (vkCreateDevice(m_physicalDevice, &createInfo, nullptr, &m_device) != VK_SUCCESS) {
+            throw std::runtime_error("failed to create logical device!");
+        }
+    }
+
     void _mainLoop() {
         while (!glfwWindowShouldClose(m_window)) {
             glfwPollEvents();
@@ -175,6 +211,8 @@ private:
     }
 
     void _cleanup() {
+        vkDestroyDevice(m_device, nullptr);
+
         if (m_enableValidationLayers) {
             _destroyDebugUtilsMessengerEXT(m_instance, m_debugMessenger, nullptr);
         }
