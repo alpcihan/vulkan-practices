@@ -11,7 +11,7 @@ target_sources(${ENGINE_LIB_NAME}
         application.cpp
 )
 
-target_link_libraries(${ENGINE_LIB_NAME}
-    PRIVATE
-        ${THIRD_PARTY_LIB_NAME}
+target_link_libraries(${ENGINE_LIB_NAME} 
+    PUBLIC
+        ${THIRD_PARTY_LIB_NAME} # TODO: make it private
 )

@@ -2,7 +2,4 @@
 
 namespace eng {
 
-void Application::run() {
-}
-
-}
+}  // namespace eng

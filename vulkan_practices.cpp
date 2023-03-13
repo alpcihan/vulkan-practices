@@ -1,11 +1,16 @@
 #include "engine/application.h"
 
 int main() {
-    eng::Application* app = new eng::Application();
+    eng::Application app;
 
-    app->run();
+    try {
+        app.run();
+    } catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
 
-    delete app;
+    return EXIT_SUCCESS;
 
     return 0;
 }
