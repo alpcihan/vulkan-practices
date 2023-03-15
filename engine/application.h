@@ -1,7 +1,5 @@
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -13,6 +11,7 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
+#include "glfw/window.h"
 #include "path_config.h"
 
 namespace eng {
@@ -48,7 +47,7 @@ private:
     const int m_MAX_FRAMES_IN_FLIGHT = 2;
     uint32_t m_currentFrame = 0;
 
-    GLFWwindow* m_window;
+    eng::glfw::Window* m_window;
 
     VkInstance m_instance;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
@@ -97,19 +96,8 @@ private:
 
 private:
     void _initWindow() {
-        glfwInit();
-
-        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-
-        m_window = glfwCreateWindow(m_WIDTH, m_HEIGHT, "Vulkan", nullptr, nullptr);
-        glfwSetWindowUserPointer(m_window, this);
-        glfwSetFramebufferSizeCallback(m_window, m_framebufferResizeCallback);
-    }
-
-    static void m_framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-        auto app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
-        app->m_framebufferResized = true;
+        m_window = new eng::glfw::Window();
+        m_window->setFramebufferResizeCallback(_framebufferResizeCallback, &m_framebufferResized);
     }
 
     void _initVulkan() {
@@ -129,7 +117,7 @@ private:
     }
 
     void _createSurface() {
-        if (glfwCreateWindowSurface(m_instance, m_window, nullptr, &m_surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(m_instance, m_window->get(), nullptr, &m_surface) != VK_SUCCESS) {
             throw std::runtime_error("failed to create window surface!");
         }
     }
@@ -384,7 +372,7 @@ private:
             return capabilities.currentExtent;
         } else {
             int width, height;
-            glfwGetFramebufferSize(m_window, &width, &height);
+            m_window->getFramebufferSize(width, height);
 
             VkExtent2D actualExtent = {
                 static_cast<uint32_t>(width),
@@ -763,8 +751,12 @@ private:
         }
     }
 
+    static void _framebufferResizeCallback(uint32_t width, uint32_t height, void* callbackData) {
+        *(bool*)callbackData = true;
+    }
+
     void _mainLoop() {
-        while (!glfwWindowShouldClose(m_window)) {
+        while (!glfwWindowShouldClose(m_window->get())) {
             glfwPollEvents();
             _drawFrame();
         }
@@ -867,16 +859,16 @@ private:
 
     void _recreateSwapChain() {
         int width = 0, height = 0;
-        glfwGetFramebufferSize(m_window, &width, &height);
+        m_window->getFramebufferSize(width, height);
         while (width == 0 || height == 0) {
-            glfwGetFramebufferSize(m_window, &width, &height);
+            m_window->getFramebufferSize(width, height);
             glfwWaitEvents();
         }
 
         vkDeviceWaitIdle(m_device);
 
         _cleanupSwapChain();
-        
+
         _createSwapChain();
         _createImageViews();
         _createFramebuffers();
@@ -915,8 +907,7 @@ private:
         vkDestroyInstance(m_instance, nullptr);
 
         // window + glfw
-        glfwDestroyWindow(m_window);
-        glfwTerminate();
+        delete m_window;
     }
 
 private:

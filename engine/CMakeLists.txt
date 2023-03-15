@@ -6,9 +6,13 @@ target_include_directories(${ENGINE_LIB_NAME}
     PRIVATE ./
 )
 
+file(GLOB_RECURSE ENGINE_SOURCE
+    "./*"
+)
+
 target_sources(${ENGINE_LIB_NAME} 
     PRIVATE
-        application.cpp
+        ${ENGINE_SOURCE}
 )
 
 target_link_libraries(${ENGINE_LIB_NAME} 
