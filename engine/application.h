@@ -3,6 +3,7 @@
 #include "shared.h"
 #include "wrapper/glfw/window.h"
 #include "wrapper/vk/instance.h"
+#include "wrapper/vk/surface.h"
 
 namespace eng {
 
@@ -38,12 +39,13 @@ private:
 
     glfw::Window* m_window;
     vk::Instance* m_instance;
+    vk::Surface* m_surface;
 
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
     VkQueue m_graphicsQueue;
 
-    VkSurfaceKHR m_surface;
+    //VkSurfaceKHR m_surface;
     VkQueue m_presentQueue;
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -91,7 +93,8 @@ private:
 
     void _initVulkan() {
         m_instance = new vk::Instance(true);
-        _createSurface();
+        m_surface = new vk::Surface(*m_instance, *m_window);
+        
         _pickPhysicalDevice();
         _createLogicalDevice();
         _createSwapChain();
@@ -102,12 +105,6 @@ private:
         _createCommandPool();
         _createCommandBuffer();
         _createSyncObjects();
-    }
-
-    void _createSurface() {
-        if (glfwCreateWindowSurface(m_instance->get(), m_window->get(), nullptr, &m_surface) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create window surface!");
-        }
     }
 
     void _pickPhysicalDevice() {
@@ -176,7 +173,7 @@ private:
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = m_surface;
+        createInfo.surface = m_surface->get();
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -227,7 +224,7 @@ private:
         for (const auto& queueFamily : queueFamilies) {
             // present family
             VkBool32 presentSupport = false;
-            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_surface, &presentSupport);
+            vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_surface->get(), &presentSupport);
             if (presentSupport) {
                 indices.presentFamily = i;
             }
@@ -250,22 +247,22 @@ private:
     SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice physicalDevice) {
         // capabilities
         SwapChainSupportDetails details;
-        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_surface, &details.capabilities);
+        vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, m_surface->get(), &details.capabilities);
 
         // formats
         uint32_t formatCount;
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface, &formatCount, nullptr);
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface->get(), &formatCount, nullptr);
         if (formatCount != 0) {
             details.formats.resize(formatCount);
-            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface, &formatCount, details.formats.data());
+            vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, m_surface->get(), &formatCount, details.formats.data());
         }
 
         // present mode
         uint32_t presentModeCount;
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface, &presentModeCount, nullptr);
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface->get(), &presentModeCount, nullptr);
         if (presentModeCount != 0) {
             details.presentModes.resize(presentModeCount);
-            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface, &presentModeCount, details.presentModes.data());
+            vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, m_surface->get(), &presentModeCount, details.presentModes.data());
         }
 
         return details;
@@ -819,10 +816,7 @@ private:
         // device
         vkDestroyDevice(m_device, nullptr);
 
-        // surface
-        vkDestroySurfaceKHR(m_instance->get(), m_surface, nullptr);
-
-        // window + glfw
+        delete m_surface;
         delete m_window;
         delete m_instance;
     }
