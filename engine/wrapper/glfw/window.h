@@ -3,7 +3,6 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-namespace eng {
 namespace glfw {
 
 typedef void (*WindowFrameBufferResizeCallback)(uint32_t width, uint32_t height, void* callbackData);
@@ -36,5 +35,4 @@ private:
     static void _framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int height);
 };
 
-}
-}  // namespace eng
+} // namespace glfw

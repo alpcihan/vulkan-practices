@@ -1,6 +1,5 @@
 #include "window.h"
 
-namespace eng {
 namespace glfw {
 
 Window::Window(uint32_t width, uint32_t height)
@@ -56,5 +55,4 @@ void Window::_framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int h
     window->m_framebufferResizeCallback(width, height, window->m_framebufferResizeCallbackData);
 }
 
-}
-}  // namespace eng
+} // namespace glfw
