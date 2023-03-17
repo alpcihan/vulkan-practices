@@ -6,10 +6,10 @@ set(VULKAN_PATH "C:/VulkanSDK/1.3.236.0") # TODO: make it automatic
 target_include_directories(${THIRD_PARTY_LIB_NAME}
     INTERFACE 
         ${VULKAN_PATH}/Include/
-        ./glfw/include/
 )
 
 add_subdirectory(glfw)
+add_subdirectory(glm)
 
 target_link_directories(${THIRD_PARTY_LIB_NAME}
     INTERFACE
@@ -21,4 +21,5 @@ target_link_libraries(${THIRD_PARTY_LIB_NAME}
     INTERFACE 
         vulkan-1
         glfw
+        glm
 )

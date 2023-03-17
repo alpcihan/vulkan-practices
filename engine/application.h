@@ -2,12 +2,17 @@
 
 #include "shared.h"
 #include "wrapper/glfw/window.h"
+#include "wrapper/vk/device.h"
 #include "wrapper/vk/instance.h"
 #include "wrapper/vk/physical_device.h"
-#include "wrapper/vk/device.h"
 #include "wrapper/vk/swap_chain.h"
 
 namespace eng {
+
+struct Vertex {
+    glm::vec2 pos;
+    glm::vec3 color;
+};
 
 class Application {
 public:

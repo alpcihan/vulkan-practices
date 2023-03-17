@@ -16,5 +16,6 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
+#include <glm/glm.hpp>
 #include "path_config.h"
 #include "helpers.h"
