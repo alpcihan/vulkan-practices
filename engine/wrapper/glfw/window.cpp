@@ -22,14 +22,15 @@ Window::~Window() {
     glfwDestroyWindow(m_glfwWindow);
 }
 
+void Window::getFramebufferSize(int& width, int& height) const {
+    glfwGetFramebufferSize(m_glfwWindow, &width, &height);
+}
+
 void Window::setFramebufferResizeCallback(WindowFrameBufferResizeCallback callback, void* callbackData) {
     m_framebufferResizeCallbackData = callbackData;
     m_framebufferResizeCallback = callback;
 }
 
-void Window::getFramebufferSize(int& width, int& height) const {
-    glfwGetFramebufferSize(m_glfwWindow, &width, &height);
-}
 
 uint32_t Window::m_windowCount = 0;
 
