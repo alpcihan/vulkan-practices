@@ -3,7 +3,6 @@
 #include "shared.h"
 #include "wrapper/glfw/window.h"
 #include "wrapper/vk/instance.h"
-#include "wrapper/vk/surface.h"
 #include "wrapper/vk/physical_device.h"
 
 namespace eng {
@@ -28,8 +27,7 @@ static std::vector<char> readResource(const std::string& filename) {
 class Application {
 public:
     void run() {
-        _initWindow();
-        _initVulkan();
+        _init();
         _mainLoop();
         _cleanup();
     }
@@ -40,14 +38,11 @@ private:
 
     glfw::Window* m_window;
     vk::Instance* m_instance;
-    vk::Surface* m_surface;
     vk::PhysicalDevice* m_physicalDevice;
-
-    //VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device;
     VkQueue m_graphicsQueue;
 
-    //VkSurfaceKHR m_surface;
+    // VkSurfaceKHR m_surface;
     VkQueue m_presentQueue;
     VkSwapchainKHR m_swapChain;
     std::vector<VkImage> m_swapChainImages;
@@ -70,16 +65,13 @@ private:
     bool m_framebufferResized = false;
 
 private:
-    void _initWindow() {
-        m_window = new glfw::Window();
-        m_window->setFramebufferResizeCallback(_framebufferResizeCallback, &m_framebufferResized);
-    }
-
-    void _initVulkan() {
+    void _init() {
+        glfwInit();
         m_instance = new vk::Instance(true);
-        m_surface = new vk::Surface(*m_instance, *m_window);
-        m_physicalDevice = new vk::PhysicalDevice(*m_instance, *m_surface);
-        
+        m_window = new glfw::Window(*m_instance);
+        m_window->setFramebufferResizeCallback(_framebufferResizeCallback, &m_framebufferResized);
+        m_physicalDevice = new vk::PhysicalDevice(*m_instance, m_window->getSurface());
+
         _createLogicalDevice();
         _createSwapChain();
         _createImageViews();
@@ -105,7 +97,7 @@ private:
 
         VkSwapchainCreateInfoKHR createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-        createInfo.surface = m_surface->get();
+        createInfo.surface = m_window->getSurface();
         createInfo.minImageCount = imageCount;
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
@@ -216,8 +208,8 @@ private:
         // VkDeviceCreateInfo are ignored by up-to-date implementations.
         // However, it is still a good idea to set them anyway to be compatible with older implementations"
         if (false) {
-            //createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
-            //createInfo.ppEnabledLayerNames = m_validationLayers.data();
+            // createInfo.enabledLayerCount = static_cast<uint32_t>(m_validationLayers.size());
+            // createInfo.ppEnabledLayerNames = m_validationLayers.data();
         } else {
             createInfo.enabledLayerCount = 0;
         }
@@ -665,7 +657,7 @@ private:
 
         _cleanupSwapChain();
 
-        m_physicalDevice->updateSwapChainSupportDetails(*m_surface);
+        m_physicalDevice->updateSwapChainSupportDetails(m_window->getSurface());
         _createSwapChain();
         _createImageViews();
         _createFramebuffers();
@@ -692,9 +684,9 @@ private:
         // device
         vkDestroyDevice(m_device, nullptr);
 
-        delete m_surface;
         delete m_window;
         delete m_instance;
+        glfwTerminate();
     }
 };
 

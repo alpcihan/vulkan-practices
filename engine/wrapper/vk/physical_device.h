@@ -2,7 +2,6 @@
 
 #include "shared.h"
 #include "wrapper/vk/instance.h"
-#include "wrapper/vk/surface.h"
 
 namespace vk {
 
@@ -23,7 +22,7 @@ struct SwapChainSupportDetails {
 
 class PhysicalDevice {
 public:
-    PhysicalDevice(const Instance& instance, const Surface& surface);
+    PhysicalDevice(const Instance& instance, const VkSurfaceKHR& surface);
 
 public:
     const VkPhysicalDevice& get() const { return m_physicalDevice; }
@@ -32,7 +31,7 @@ public:
     const std::vector<const char*>& getExtensions() const { return m_deviceExtensions; }
 
     // eg: on windows resize
-    void updateSwapChainSupportDetails(const Surface& surface); // TODO: check if this is possible to automate
+    void updateSwapChainSupportDetails(const VkSurfaceKHR& surface); // TODO: check if this is possible to automate
 
 private: 
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
@@ -43,10 +42,10 @@ private:
         VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 private:
-    bool _isDeviceSuitable(VkPhysicalDevice physicalDevice, const Surface& surface);
+    bool _isDeviceSuitable(VkPhysicalDevice physicalDevice, const VkSurfaceKHR& surface);
     bool _checkDeviceExtensionSupport(VkPhysicalDevice device);
-    QueueFamilyIndices _findQueueFamilies(VkPhysicalDevice physicalDevice, const Surface& surface);
-    SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice physicalDevice, const Surface& surface);
+    QueueFamilyIndices _findQueueFamilies(VkPhysicalDevice physicalDevice, const VkSurfaceKHR& surface);
+    SwapChainSupportDetails _querySwapChainSupport(VkPhysicalDevice physicalDevice, const VkSurfaceKHR& surface);
 
 };
 

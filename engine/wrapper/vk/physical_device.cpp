@@ -2,7 +2,7 @@
 
 namespace vk {
 
-PhysicalDevice::PhysicalDevice(const Instance& instance, const Surface& surface) {
+PhysicalDevice::PhysicalDevice(const Instance& instance, const VkSurfaceKHR& surface) {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(instance.get(), &deviceCount, nullptr);
     if (deviceCount == 0) {
@@ -28,12 +28,12 @@ PhysicalDevice::PhysicalDevice(const Instance& instance, const Surface& surface)
 
 }
 
-void PhysicalDevice::updateSwapChainSupportDetails(const Surface& surface)
+void PhysicalDevice::updateSwapChainSupportDetails(const VkSurfaceKHR& surface)
 {
     m_swapChainSupportDetails = _querySwapChainSupport(m_physicalDevice, surface);
 }
 
-bool PhysicalDevice::_isDeviceSuitable(VkPhysicalDevice physicalDevice, const Surface& surface) {
+bool PhysicalDevice::_isDeviceSuitable(VkPhysicalDevice physicalDevice, const VkSurfaceKHR& surface) {
     m_queueFamilyIndices = _findQueueFamilies(physicalDevice, surface);
 
     bool extensionsSupported = _checkDeviceExtensionSupport(physicalDevice);
@@ -62,7 +62,7 @@ bool PhysicalDevice::_checkDeviceExtensionSupport(VkPhysicalDevice device) {
     return requiredExtensions.empty();
 }
 
-QueueFamilyIndices PhysicalDevice::_findQueueFamilies(VkPhysicalDevice physicalDevice, const Surface& surface) {
+QueueFamilyIndices PhysicalDevice::_findQueueFamilies(VkPhysicalDevice physicalDevice, const VkSurfaceKHR& surface) {
     QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
@@ -74,7 +74,7 @@ QueueFamilyIndices PhysicalDevice::_findQueueFamilies(VkPhysicalDevice physicalD
     for (const auto& queueFamily : queueFamilies) {
         // present family
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface.get(), &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
         if (presentSupport) {
             indices.presentFamily = i;
         }
@@ -94,25 +94,25 @@ QueueFamilyIndices PhysicalDevice::_findQueueFamilies(VkPhysicalDevice physicalD
     return indices;
 }
 
-SwapChainSupportDetails PhysicalDevice::_querySwapChainSupport(VkPhysicalDevice physicalDevice, const Surface& surface) {
+SwapChainSupportDetails PhysicalDevice::_querySwapChainSupport(VkPhysicalDevice physicalDevice, const VkSurfaceKHR& surface) {
     // capabilities
     SwapChainSupportDetails details;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface.get(), &details.capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities);
 
     // formats
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface.get(), &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, nullptr);
     if (formatCount != 0) {
         details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface.get(), &formatCount, details.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount, details.formats.data());
     }
 
     // present mode
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface.get(), &presentModeCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr);
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface.get(), &presentModeCount, details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, details.presentModes.data());
     }
 
     return details;

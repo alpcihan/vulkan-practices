@@ -1,6 +1,10 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
+#ifndef GLFW_INCLUDE_VULKAN
+    #define GLFW_INCLUDE_VULKAN
+#endif
+
+#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <chrono>
 #include <cstdint>

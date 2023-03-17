@@ -1,15 +1,9 @@
-#include "window.h"
+#include "wrapper/glfw/window.h"
 
 namespace glfw {
 
-Window::Window(uint32_t width, uint32_t height)
-    : m_width(width), m_height(height) {
-    
-    if(m_windowCount <= 0)
-    {
-        glfwInit();
-    }
-    
+Window::Window(const vk::Instance& instance, uint32_t width, uint32_t height)
+    : m_instance(instance), m_width(width), m_height(height) {
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
@@ -18,17 +12,14 @@ Window::Window(uint32_t width, uint32_t height)
     glfwSetWindowUserPointer(m_glfwWindow, this);
     glfwSetFramebufferSizeCallback(m_glfwWindow, _framebufferResizeCallback);
 
-    m_windowCount++;
+    if (glfwCreateWindowSurface(instance.get(), m_glfwWindow, nullptr, &m_surface) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create window surface!");
+    }
 }
 
 Window::~Window() {
+    vkDestroySurfaceKHR(m_instance.get(), m_surface, nullptr);
     glfwDestroyWindow(m_glfwWindow);
-    m_windowCount--;
-
-    if(m_windowCount <= 0)
-    {
-        glfwTerminate();
-    }
 }
 
 void Window::setFramebufferResizeCallback(WindowFrameBufferResizeCallback callback, void* callbackData) {
@@ -55,4 +46,4 @@ void Window::_framebufferResizeCallback(GLFWwindow* glfwWindow, int width, int h
     window->m_framebufferResizeCallback(width, height, window->m_framebufferResizeCallbackData);
 }
 
-} // namespace glfw
+}  // namespace glfw
