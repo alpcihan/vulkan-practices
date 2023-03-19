@@ -4,7 +4,6 @@
     #define GLFW_INCLUDE_VULKAN
 #endif
 
-#include <GLFW/glfw3.h>
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
@@ -16,6 +15,9 @@
 #include <set>
 #include <stdexcept>
 #include <vector>
+#include <array>
+
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include "path_config.h"
 #include "helpers.h"
