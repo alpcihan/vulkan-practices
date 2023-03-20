@@ -12,7 +12,6 @@ inline VkApplicationInfo applicationInfo() {
         .pEngineName = "No Engine",
         .engineVersion = VK_MAKE_VERSION(1, 0, 0),
         .apiVersion = VK_API_VERSION_1_0
-        // pNext
     };
 }
 
@@ -21,8 +20,6 @@ inline VkCommandBufferAllocateInfo commandBufferAllocateInfo() {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = 1
-        // commandPool
-        // pNext
     };
 }
 
@@ -31,7 +28,13 @@ inline VkCommandBufferBeginInfo commandBufferBeginInfo() {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
         .flags = 0,                  // optional
         .pInheritanceInfo = nullptr  // optional
-        // pNext
+    };
+}
+
+inline VkBufferCreateInfo bufferCreateInfo() {
+    return {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
     };
 }
 
@@ -42,10 +45,6 @@ inline VkRenderPassBeginInfo renderPassBeginInfo() {
         .renderArea{.offset = {0, 0}},
         .clearValueCount = 1,
         .pClearValues = &clearColor
-        // renderPass
-        // framebuffer
-        // renderArea.extent
-        // pNext
     };
 }
 
@@ -55,15 +54,12 @@ inline VkViewport viewport() {
         .y = 0.0f,
         .minDepth = 0.0f,
         .maxDepth = 1.0
-        // width
-        // height
     };
 }
 
 inline VkRect2D rect2D() {
     return {
         .offset = {0, 0}
-        // .extent
     };
 }
 
