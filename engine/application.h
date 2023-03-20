@@ -41,9 +41,14 @@ struct Vertex {
 };
 
 const std::vector<Vertex> vertices = {
-    {{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-    {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-    {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+    {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+    {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+    {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+    {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+};
+
+const std::vector<uint16_t> indices = {
+    0, 1, 2, 2, 3, 0};
 
 class Application {
 public:
@@ -63,7 +68,7 @@ private:
     vk::Device* m_device;
     vk::SwapChain* m_swapChain;
 
-    vk::Buffer *m_vertexBuffer, *m_stagingBuffer;
+    vk::Buffer *m_vertexBuffer, *m_indexBuffer;
 
     VkRenderPass m_renderPass;
     VkPipelineLayout m_pipelineLayout;
@@ -93,6 +98,7 @@ private:
         _createGraphicsPipeline();
         _createCommandPool();
         _createVertexBuffer();
+        _createIndexBuffer();
         _createCommandBuffer();
         _createSyncObjects();
     }
@@ -324,13 +330,13 @@ private:
         VkBufferCreateInfo bufferInfo = vk::bufferCreateInfo();
         bufferInfo.size = bufferSize;
         bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        m_stagingBuffer = new vk::Buffer(*m_device, *m_physicalDevice, bufferInfo,
-                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+        vk::Buffer stagingBuffer(*m_device, *m_physicalDevice, bufferInfo,
+                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         void* data;
-        vkMapMemory(m_device->get(), m_stagingBuffer->getMemory(), 0, bufferSize, 0, &data);
+        vkMapMemory(m_device->get(), stagingBuffer.getMemory(), 0, bufferSize, 0, &data);
         memcpy(data, vertices.data(), (size_t)bufferSize);
-        vkUnmapMemory(m_device->get(), m_stagingBuffer->getMemory());
+        vkUnmapMemory(m_device->get(), stagingBuffer.getMemory());
 
         bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         m_vertexBuffer = new vk::Buffer(*m_device, *m_physicalDevice, bufferInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -344,7 +350,7 @@ private:
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         cmd.begin(beginInfo);
 
-        cmd.copyBuffer(*m_stagingBuffer, *m_vertexBuffer, bufferSize);
+        cmd.copyBuffer(stagingBuffer, *m_vertexBuffer, bufferSize);
         cmd.end();
 
         VkSubmitInfo submitInfo{};
@@ -354,8 +360,44 @@ private:
 
         vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
         vkQueueWaitIdle(m_device->getGraphicsQueue());
+    }
 
-        vkFreeCommandBuffers(m_device->get(), m_commandPool, 1, &cmd.get()); // TODO: add to the command buffer class
+    void _createIndexBuffer() {
+        VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+        VkBufferCreateInfo bufferInfo = vk::bufferCreateInfo();
+        bufferInfo.size = bufferSize;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        vk::Buffer stagingBuffer(*m_device, *m_physicalDevice, bufferInfo,
+                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+        void* data;
+        vkMapMemory(m_device->get(), stagingBuffer.getMemory(), 0, bufferSize, 0, &data);
+        memcpy(data, indices.data(), (size_t)bufferSize);
+        vkUnmapMemory(m_device->get(), stagingBuffer.getMemory());
+
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        m_indexBuffer = new vk::Buffer(*m_device, *m_physicalDevice, bufferInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        // copy
+        VkCommandBufferAllocateInfo allocInfo = vk::commandBufferAllocateInfo();
+        allocInfo.commandPool = m_commandPool;
+        vk::CommandBuffer cmd(*m_device, allocInfo);
+
+        VkCommandBufferBeginInfo beginInfo = vk::commandBufferBeginInfo();
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        cmd.begin(beginInfo);
+
+        cmd.copyBuffer(stagingBuffer, *m_indexBuffer, bufferSize);
+        cmd.end();
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmd.get();
+
+        vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(m_device->getGraphicsQueue());
     }
 
     VkShaderModule _createShaderModule(const std::vector<char>& code) {
@@ -373,12 +415,14 @@ private:
     }
 
     void _createCommandBuffer() {
+        m_commandBuffers.reserve(m_MAX_FRAMES_IN_FLIGHT);
+
         VkCommandBufferAllocateInfo allocInfo = vk::commandBufferAllocateInfo();
         allocInfo.commandPool = m_commandPool;
 
         // TODO: use resize
         for (int i = 0; i < m_MAX_FRAMES_IN_FLIGHT; i++) {
-            m_commandBuffers.push_back(std::move(vk::CommandBuffer(*m_device, allocInfo)));
+            m_commandBuffers.emplace_back(*m_device, allocInfo);
         }
     }
 
@@ -397,6 +441,7 @@ private:
         VkBuffer vertexBuffers[] = {m_vertexBuffer->get()};
         VkDeviceSize offsets[] = {0};
         cmd.bindVertexBuffers(vertexBuffers, offsets);
+        cmd.bindIndexBuffer(m_indexBuffer->get(), VK_INDEX_TYPE_UINT16); // TODO: add index buffer wrapper binding
 
         VkViewport viewport = vk::viewport();
         {
@@ -409,7 +454,7 @@ private:
         scissor.extent = m_swapChain->getExtent();
         cmd.setScissor(scissor);
 
-        cmd.draw(static_cast<uint32_t>(vertices.size()));
+        cmd.drawIndexed(static_cast<uint32_t>(indices.size()));
         cmd.endRenderPass();
 
         cmd.end();
@@ -537,7 +582,7 @@ private:
 
         // buffers
         delete m_vertexBuffer;
-        delete m_stagingBuffer;
+        delete m_indexBuffer;
 
         // pipeline
         vkDestroyPipeline(m_device->get(), m_graphicsPipeline, nullptr);
