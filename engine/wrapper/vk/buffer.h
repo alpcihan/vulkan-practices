@@ -12,7 +12,7 @@ public:
     ~Buffer();
 
     inline const VkBuffer& get() const { return m_buffer; }
-    inline const VkDeviceMemory& getMemory () const { return m_bufferMemory; } 
+    inline const VkDeviceMemory& getMemory () const { return m_bufferMemory; }
 
 private:
     VkBuffer m_buffer;

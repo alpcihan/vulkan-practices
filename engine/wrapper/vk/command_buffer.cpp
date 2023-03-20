@@ -2,16 +2,14 @@
 
 namespace vk {
 
-CommandBuffer::CommandBuffer(const Device& device, const VkCommandBufferAllocateInfo& allocInfo) {   
+CommandBuffer::CommandBuffer(const Device& device, const VkCommandBufferAllocateInfo& allocInfo) {
     // TODO: add multiple allocation support
     if (vkAllocateCommandBuffers(device.get(), &allocInfo, &m_commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 }
 
-void CommandBuffer::begin() const {
-    VkCommandBufferBeginInfo beginInfo = vk::commandBufferBeginInfo();
-
+void CommandBuffer::begin(const VkCommandBufferBeginInfo& beginInfo) const {
     if (vkBeginCommandBuffer(m_commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("failed to begin recording command buffer!");
     }
@@ -41,8 +39,16 @@ void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount, uint32_t 
     vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void CommandBuffer::reset() const
-{
+void CommandBuffer::copyBuffer(const Buffer& src, Buffer& dst, VkDeviceSize size) const {
+    VkBufferCopy copyRegion{
+        copyRegion.srcOffset = 0,  // Optional
+        copyRegion.dstOffset = 0,  // Optional
+        copyRegion.size = size};
+
+    vkCmdCopyBuffer(m_commandBuffer, src.get(), dst.get(), 1, &copyRegion);
+}
+
+void CommandBuffer::reset() const {
     vkResetCommandBuffer(m_commandBuffer, 0);
 }
 

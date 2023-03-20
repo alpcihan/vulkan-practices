@@ -2,6 +2,7 @@
 
 #include "shared.h"
 #include "wrapper/glfw/window.h"
+#include "wrapper/vk/buffer.h"
 #include "wrapper/vk/command_buffer.h"
 #include "wrapper/vk/device.h"
 #include "wrapper/vk/instance.h"
@@ -62,21 +63,19 @@ private:
     vk::Device* m_device;
     vk::SwapChain* m_swapChain;
 
+    vk::Buffer *m_vertexBuffer, *m_stagingBuffer;
+
     VkRenderPass m_renderPass;
     VkPipelineLayout m_pipelineLayout;
     VkPipeline m_graphicsPipeline;
 
     std::vector<VkFramebuffer> m_swapChainFramebuffers;
     VkCommandPool m_commandPool;
-    // std::vector<VkCommandBuffer> m_commandBuffers;
     std::vector<vk::CommandBuffer> m_commandBuffers;
 
     std::vector<VkSemaphore> m_imageAvailableSemaphores;
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
-
-    VkBuffer m_vertexBuffer;
-    VkDeviceMemory m_vertexBufferMemory;
 
     bool m_framebufferResized = false;
 
@@ -294,9 +293,9 @@ private:
             .renderPass = m_renderPass,
             .subpass = 0,
             .basePipelineHandle = VK_NULL_HANDLE,  // optional to derive new pipeline from the current one
-            .basePipelineIndex = -1               // optional to derive new pipeline from the current one
+            .basePipelineIndex = -1                // optional to derive new pipeline from the current one
         };
-        
+
         if (vkCreateGraphicsPipelines(m_device->get(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_graphicsPipeline) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics pipeline!");
         }
@@ -311,57 +310,52 @@ private:
         VkCommandPoolCreateInfo poolInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()
-        };
-        
+            .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value()};
+
         if (vkCreateCommandPool(m_device->get(), &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create command pool!");
         }
     }
 
-    uint32_t _findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-        VkPhysicalDeviceMemoryProperties memProperties;
-        vkGetPhysicalDeviceMemoryProperties(m_physicalDevice->get(), &memProperties);
-
-        for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-            if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-                return i;
-            }
-        }
-
-        throw std::runtime_error("failed to find suitable memory type!");
-    }
-
     void _createVertexBuffer() {
-        VkBufferCreateInfo bufferInfo{
-            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            .size = sizeof(vertices[0]) * vertices.size(),
-            .usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            .sharingMode = VK_SHARING_MODE_EXCLUSIVE};
+        VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-        if (vkCreateBuffer(m_device->get(), &bufferInfo, nullptr, &m_vertexBuffer) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create vertex buffer!");
-        }
-
-        VkMemoryRequirements memRequirements;
-        vkGetBufferMemoryRequirements(m_device->get(), m_vertexBuffer, &memRequirements);
-
-        VkMemoryAllocateInfo allocInfo{
-            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            .allocationSize = memRequirements.size,
-            .memoryTypeIndex = _findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-        };
-        
-        if (vkAllocateMemory(m_device->get(), &allocInfo, nullptr, &m_vertexBufferMemory) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate vertex buffer memory!");
-        }
-
-        vkBindBufferMemory(m_device->get(), m_vertexBuffer, m_vertexBufferMemory, 0);
+        // staging buffer
+        VkBufferCreateInfo bufferInfo = vk::bufferCreateInfo();
+        bufferInfo.size = bufferSize;
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        m_stagingBuffer = new vk::Buffer(*m_device, *m_physicalDevice, bufferInfo,
+                                         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
         void* data;
-        vkMapMemory(m_device->get(), m_vertexBufferMemory, 0, bufferInfo.size, 0, &data);
-        memcpy(data, vertices.data(), (size_t)bufferInfo.size);
-        vkUnmapMemory(m_device->get(), m_vertexBufferMemory);
+        vkMapMemory(m_device->get(), m_stagingBuffer->getMemory(), 0, bufferSize, 0, &data);
+        memcpy(data, vertices.data(), (size_t)bufferSize);
+        vkUnmapMemory(m_device->get(), m_stagingBuffer->getMemory());
+
+        bufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        m_vertexBuffer = new vk::Buffer(*m_device, *m_physicalDevice, bufferInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+        // copy
+        VkCommandBufferAllocateInfo allocInfo = vk::commandBufferAllocateInfo();
+        allocInfo.commandPool = m_commandPool;
+        vk::CommandBuffer cmd(*m_device, allocInfo);
+
+        VkCommandBufferBeginInfo beginInfo = vk::commandBufferBeginInfo();
+        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+        cmd.begin(beginInfo);
+
+        cmd.copyBuffer(*m_stagingBuffer, *m_vertexBuffer, bufferSize);
+        cmd.end();
+
+        VkSubmitInfo submitInfo{};
+        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+        submitInfo.commandBufferCount = 1;
+        submitInfo.pCommandBuffers = &cmd.get();
+
+        vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, VK_NULL_HANDLE);
+        vkQueueWaitIdle(m_device->getGraphicsQueue());
+
+        vkFreeCommandBuffers(m_device->get(), m_commandPool, 1, &cmd.get()); // TODO: add to the command buffer class
     }
 
     VkShaderModule _createShaderModule(const std::vector<char>& code) {
@@ -389,7 +383,7 @@ private:
     }
 
     void _recordCommandBuffer(const vk::CommandBuffer& cmd, uint32_t imageIndex) {
-        cmd.begin();
+        cmd.begin(vk::commandBufferBeginInfo());
 
         VkRenderPassBeginInfo renderPassInfo = vk::renderPassBeginInfo();
         {
@@ -400,7 +394,7 @@ private:
         cmd.beginRenderPass(renderPassInfo);
         cmd.bindPipeline(m_graphicsPipeline);
 
-        VkBuffer vertexBuffers[] = {m_vertexBuffer};
+        VkBuffer vertexBuffers[] = {m_vertexBuffer->get()};
         VkDeviceSize offsets[] = {0};
         cmd.bindVertexBuffers(vertexBuffers, offsets);
 
@@ -417,7 +411,7 @@ private:
 
         cmd.draw(static_cast<uint32_t>(vertices.size()));
         cmd.endRenderPass();
-        
+
         cmd.end();
     }
 
@@ -463,9 +457,8 @@ private:
             .commandBufferCount = 1,
             .pCommandBuffers = &m_commandBuffers[m_currentFrame].get(),
             .signalSemaphoreCount = 1,
-            .pSignalSemaphores = signalSemaphores
-        };
-        
+            .pSignalSemaphores = signalSemaphores};
+
         if (vkQueueSubmit(m_device->getGraphicsQueue(), 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS) {
             throw std::runtime_error("failed to submit draw command buffer!");
         }
@@ -480,7 +473,7 @@ private:
             .pImageIndices = &imageIndex,
             .pResults = nullptr  // optional
         };
-        
+
         result = vkQueuePresentKHR(m_device->getPresentQueue(), &presentInfo);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_framebufferResized) {
@@ -499,14 +492,12 @@ private:
         m_inFlightFences.resize(m_MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
-        };
-        
+            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
+
         VkFenceCreateInfo fenceInfo{
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-            .flags = VK_FENCE_CREATE_SIGNALED_BIT
-        };
-        
+            .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+
         for (size_t i = 0; i < m_MAX_FRAMES_IN_FLIGHT; i++) {
             if (vkCreateSemaphore(m_device->get(), &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
                 vkCreateSemaphore(m_device->get(), &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
@@ -545,8 +536,8 @@ private:
         _cleanupSwapChain();
 
         // buffers
-        vkDestroyBuffer(m_device->get(), m_vertexBuffer, nullptr);
-        vkFreeMemory(m_device->get(), m_vertexBufferMemory, nullptr);
+        delete m_vertexBuffer;
+        delete m_stagingBuffer;
 
         // pipeline
         vkDestroyPipeline(m_device->get(), m_graphicsPipeline, nullptr);
