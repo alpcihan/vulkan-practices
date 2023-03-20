@@ -9,7 +9,7 @@ public:
     Instance(bool enableValidationLayers = false);
     ~Instance();
 
-    const VkInstance& get() const { return m_instance; }
+    inline const VkInstance& get() const { return m_instance; }
 
 private:
     VkInstance m_instance;

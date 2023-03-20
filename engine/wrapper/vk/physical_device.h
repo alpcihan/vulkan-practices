@@ -25,10 +25,10 @@ public:
     PhysicalDevice(const Instance& instance, const VkSurfaceKHR& surface);
 
 public:
-    const VkPhysicalDevice& get() const { return m_physicalDevice; }
-    const QueueFamilyIndices& getQueueFamilyIndices() const { return m_queueFamilyIndices; }
-    const SwapChainSupportDetails& getSwapChainSupportDetails() const { return m_swapChainSupportDetails; }
-    const std::vector<const char*>& getExtensions() const { return m_deviceExtensions; }
+    inline const VkPhysicalDevice& get() const { return m_physicalDevice; }
+    inline const QueueFamilyIndices& getQueueFamilyIndices() const { return m_queueFamilyIndices; }
+    inline const SwapChainSupportDetails& getSwapChainSupportDetails() const { return m_swapChainSupportDetails; }
+    inline const std::vector<const char*>& getExtensions() const { return m_deviceExtensions; }
 
     // eg: on windows resize
     void updateSwapChainSupportDetails(const VkSurfaceKHR& surface); // TODO: check if this is possible to automate

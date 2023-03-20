@@ -10,7 +10,7 @@ public:
     Device(const PhysicalDevice& physicalDevice);
     ~Device();
 
-    const VkDevice& get() const { return m_device; }
+    inline const VkDevice& get() const { return m_device; }
     const VkQueue& getPresentQueue() const { return m_presentQueue; }
     const VkQueue& getGraphicsQueue() const { return m_graphicsQueue; }
 

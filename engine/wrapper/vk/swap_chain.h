@@ -12,11 +12,11 @@ public:
     SwapChain(const Device& device, const PhysicalDevice& physicalDevice, const glfw::Window& window);
     ~SwapChain();
 
-    const VkSwapchainKHR& get() const { return m_swapChain; }
-    const std::vector<VkImage>& getImages() const { return m_swapChainImages; }
-    const std::vector<VkImageView>& getImageViews() const { return m_swapChainImageViews; }
-    const VkFormat& getImageFormat() const { return m_swapChainImageFormat; }
-    const VkExtent2D& getExtent() const { return m_swapChainExtent; }
+    inline const VkSwapchainKHR& get() const { return m_swapChain; }
+    inline const std::vector<VkImage>& getImages() const { return m_swapChainImages; }
+    inline const std::vector<VkImageView>& getImageViews() const { return m_swapChainImageViews; }
+    inline const VkFormat& getImageFormat() const { return m_swapChainImageFormat; }
+    inline const VkExtent2D& getExtent() const { return m_swapChainExtent; }
 
     void create();
     void clean();

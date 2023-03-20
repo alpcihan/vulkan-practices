@@ -21,3 +21,4 @@
 #include <glm/glm.hpp>
 #include "path_config.h"
 #include "helpers.h"
+#include "wrapper/vk/structs.h"

@@ -1,6 +1,4 @@
 #include "wrapper/vk/instance.h"
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
 
 namespace vk {
 
@@ -12,13 +10,7 @@ Instance::Instance(bool enableValidationLayers)
     }
 
     // create app info
-    VkApplicationInfo appInfo{
-        .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        .pApplicationName = "Vulkan Practices",
-        .applicationVersion = VK_MAKE_VERSION(1, 0, 0),
-        .pEngineName = "No Engine",
-        .engineVersion = VK_MAKE_VERSION(1, 0, 0),
-        .apiVersion = VK_API_VERSION_1_0};
+    VkApplicationInfo appInfo = vk::applicationInfo();
 
     // create instance
     auto requiredExtensions = _getRequiredExtensions();
