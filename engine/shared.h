@@ -18,7 +18,6 @@
 #include <array>
 
 #include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
 #include "path_config.h"
 #include "helpers.h"
 #include "wrapper/vk/structs.h"

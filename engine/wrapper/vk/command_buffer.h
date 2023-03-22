@@ -11,7 +11,7 @@ public:
     CommandBuffer(const Device& device, const VkCommandBufferAllocateInfo& allocInfo);
     ~CommandBuffer();
 
-    inline const VkCommandBuffer& get() const { return m_commandBuffer; }
+    inline const VkCommandBuffer& get() const { return m_cmd; }
     
     void begin(const VkCommandBufferBeginInfo& beginInfo) const;
     void beginRenderPass(const VkRenderPassBeginInfo& renderPassInfo) const;
@@ -19,6 +19,7 @@ public:
     void bindPipeline(const VkPipeline& pipeline) const;
     void bindVertexBuffers(const VkBuffer (&vertexBuffers)[], const VkDeviceSize (&offsets)[]) const;
     void bindIndexBuffer(const VkBuffer &indexBuffer, VkIndexType type) const;
+    void bindDescriptorSets(VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, const VkDescriptorSet *descriptorSets, uint32_t firstSet = 0, uint32_t descriptorSetCount = 1, uint32_t dynamicOffsetCount = 0, const uint32_t *dynamicOffsets = nullptr) const;
 
     void setScissor(const VkRect2D& scissor) const;
     void setViewport(const VkViewport& viewport) const;
@@ -33,7 +34,7 @@ public:
     void endRenderPass() const;
 
 private:
-    VkCommandBuffer m_commandBuffer;
+    VkCommandBuffer m_cmd;
 
     const Device& m_device;
     const VkCommandPool& m_commandPool;

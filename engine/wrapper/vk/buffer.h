@@ -12,11 +12,15 @@ public:
     ~Buffer();
 
     inline const VkBuffer& get() const { return m_buffer; }
-    inline const VkDeviceMemory& getMemory () const { return m_bufferMemory; }
+    inline const VkDeviceMemory& getMemory () const { return m_memory; }
+    
+    void setData(const void* data); // TODO: support different sizes
 
 private:
     VkBuffer m_buffer;
-    VkDeviceMemory m_bufferMemory;
+    VkDeviceMemory m_memory;
+    void* m_data;
+    uint32_t m_size;
 
     const Device& m_device;
 
