@@ -6,6 +6,7 @@ set(VULKAN_PATH "C:/VulkanSDK/1.3.236.0") # TODO: make it automatic
 target_include_directories(${THIRD_PARTY_LIB_NAME}
     INTERFACE 
         ${VULKAN_PATH}/Include/
+        stb_image/include
 )
 
 add_subdirectory(glfw)
