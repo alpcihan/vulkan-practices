@@ -12,6 +12,12 @@ target_include_directories(${THIRD_PARTY_LIB_NAME}
 add_subdirectory(glfw)
 add_subdirectory(glm)
 
+target_sources(${THIRD_PARTY_LIB_NAME}
+    INTERFACE
+        stb_image/src/stb_image.cpp
+
+)
+
 target_link_directories(${THIRD_PARTY_LIB_NAME}
     INTERFACE
         ${VULKAN_PATH}/Bin
