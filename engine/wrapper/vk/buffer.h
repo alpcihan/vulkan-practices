@@ -23,9 +23,6 @@ private:
     uint32_t m_size;
 
     const Device& m_device;
-
-private:
-    uint32_t _findMemoryType(const PhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 };
 
 }

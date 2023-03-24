@@ -30,6 +30,8 @@ public:
     inline const SwapChainSupportDetails& getSwapChainSupportDetails() const { return m_swapChainSupportDetails; }
     inline const std::vector<const char*>& getExtensions() const { return m_deviceExtensions; }
 
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
+
     // eg: on windows resize
     void updateSwapChainSupportDetails(const VkSurfaceKHR& surface); // TODO: check if this is possible to automate
 

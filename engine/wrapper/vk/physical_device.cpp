@@ -28,6 +28,20 @@ PhysicalDevice::PhysicalDevice(const Instance& instance, const VkSurfaceKHR& sur
 
 }
 
+uint32_t PhysicalDevice::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
+{
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    
+    throw std::runtime_error("failed to find suitable memory type!");
+}
+
 void PhysicalDevice::updateSwapChainSupportDetails(const VkSurfaceKHR& surface)
 {
     m_swapChainSupportDetails = _querySwapChainSupport(m_physicalDevice, surface);

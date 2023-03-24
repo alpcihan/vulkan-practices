@@ -14,7 +14,7 @@ Buffer::Buffer(const Device& device, const PhysicalDevice& physicalDevice, const
     VkMemoryAllocateInfo allocInfo{
         .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         .allocationSize = memRequirements.size,
-        .memoryTypeIndex = _findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)};
+        .memoryTypeIndex = physicalDevice.findMemoryType(memRequirements.memoryTypeBits, properties)};
 
     if (vkAllocateMemory(m_device.get(), &allocInfo, nullptr, &m_memory) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate buffer memory!");
@@ -33,19 +33,6 @@ Buffer::~Buffer() {
 void Buffer::setData(const void* data)
 {
     memcpy(m_data, data, m_size);
-}
-
-uint32_t Buffer::_findMemoryType(const PhysicalDevice& physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) const {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice.get(), &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
 }
 
 }
