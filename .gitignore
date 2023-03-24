@@ -1,3 +1,6 @@
+# binaries
+resources/shaders/bin
+
 # Visual Studio
 .vs
 
